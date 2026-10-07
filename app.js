@@ -233,6 +233,24 @@
       { size: 9, color: [100, 116, 139], gap: 6 }
     );
 
+    y += 4;
+    line('¿Quieres ganar más masa muscular?', { style: 'bold', size: 12, color: [15, 23, 42], gap: 3 });
+    line(
+      'Si te interesa profundizar con una guía práctica, te recomendamos ' +
+        '«Aumento de Masa Muscular - Guía Completa 2023» (ebook, Max Fitness).',
+      { size: 10, gap: 3 }
+    );
+    const affiliateUrl = 'https://go.hotmart.com/P107922015D';
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Página del producto:', margin, y);
+    const labelW = doc.getTextWidth('Página del producto: ');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 118, 110);
+    doc.textWithLink(affiliateUrl, margin + labelW, y, { url: affiliateUrl });
+    y += 8;
+
     const filename = 'masa-muscular-' + slugifyName(nombre) + '.pdf';
     const dataUri = doc.output('datauristring');
     const base64 = dataUri.split(',')[1] || '';
