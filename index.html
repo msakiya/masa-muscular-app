@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Calculadora de masa muscular esquelética estimada — estimación educativa" />
+  <title>Masa Muscular — Calculadora</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-orbs" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+  </div>
+
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">💪</span>
+      <div>
+        <p class="brand-name">Masa Muscular</p>
+        <p class="brand-tag">Estimación educativa · Lee et al.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Calcula tu <em>masa muscular</em> estimada</h1>
+      <p class="hero-sub">Ingresa tus datos y recibe un PDF con recomendaciones personalizadas. Es una estimación educativa, no un diagnóstico médico.</p>
+    </section>
+
+    <!-- Paso 1: Métricas -->
+    <section class="card" id="form-section">
+      <div class="card-head">
+        <span class="step-badge">1</span>
+        <h2>Tus métricas</h2>
+      </div>
+
+      <form id="metrics-form" novalidate>
+        <fieldset class="sexo-field">
+          <legend>Sexo</legend>
+          <div class="sexo-toggle" role="group" aria-label="Sexo">
+            <label class="sexo-option">
+              <input type="radio" name="sexo" value="hombre" checked />
+              <span>Hombre</span>
+            </label>
+            <label class="sexo-option">
+              <input type="radio" name="sexo" value="mujer" />
+              <span>Mujer</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="grid-2">
+          <label class="field">
+            <span>Edad (años)</span>
+            <input type="number" id="edad" name="edad" min="15" max="100" step="1" placeholder="28" required />
+          </label>
+          <label class="field">
+            <span>Altura (cm)</span>
+            <input type="number" id="altura" name="altura" min="120" max="230" step="0.1" placeholder="175" required />
+          </label>
+          <label class="field">
+            <span>Peso (kg)</span>
+            <input type="number" id="peso" name="peso" min="30" max="250" step="0.1" placeholder="72" required />
+          </label>
+          <label class="field">
+            <span>Cintura (cm) <em class="optional">opcional</em></span>
+            <input type="number" id="cintura" name="cintura" min="40" max="200" step="0.1" placeholder="80" />
+          </label>
+        </div>
+
+        <p class="form-error" id="form-error" hidden></p>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          Calcular
+        </button>
+      </form>
+    </section>
+
+    <!-- Paso 2: Resultados -->
+    <section class="card results-card" id="results-section" hidden>
+      <div class="card-head">
+        <span class="step-badge">2</span>
+        <h2>Tus resultados</h2>
+      </div>
+
+      <div class="metric-grid">
+        <article class="metric-tile metric-primary">
+          <p class="metric-label">Masa muscular (SMM)</p>
+          <p class="metric-value"><span id="out-smm">—</span> <small>kg</small></p>
+        </article>
+        <article class="metric-tile">
+          <p class="metric-label">% masa muscular</p>
+          <p class="metric-value"><span id="out-pct">—</span> <small>%</small></p>
+        </article>
+        <article class="metric-tile">
+          <p class="metric-label">IMC</p>
+          <p class="metric-value"><span id="out-imc">—</span></p>
+        </article>
+        <article class="metric-tile">
+          <p class="metric-label">Categoría</p>
+          <p class="metric-value category" id="out-cat">—</p>
+        </article>
+      </div>
+
+      <p class="caveat">
+        ⚠️ Esta es una <strong>estimación educativa</strong> basada en la fórmula de Lee et al.
+        No sustituye una evaluación profesional (DEXA, BIA clínica, etc.) ni es consejo médico.
+      </p>
+    </section>
+
+    <!-- Paso 3: Datos + PDF -->
+    <section class="card lead-card" id="lead-section" hidden>
+      <div class="card-head">
+        <span class="step-badge">3</span>
+        <h2>Recibe tu PDF</h2>
+      </div>
+      <p class="lead-intro">Déjanos tu nombre y correo para generar el informe con recomendaciones personalizadas.</p>
+
+      <form id="lead-form" novalidate>
+        <div class="grid-2">
+          <label class="field">
+            <span>Nombre</span>
+            <input type="text" id="nombre" name="nombre" maxlength="80" placeholder="Tu nombre" required autocomplete="name" />
+          </label>
+          <label class="field">
+            <span>Correo</span>
+            <input type="email" id="email" name="email" maxlength="120" placeholder="tu@correo.com" required autocomplete="email" />
+          </label>
+        </div>
+
+        <p class="form-error" id="lead-error" hidden></p>
+        <p class="form-success" id="lead-success" hidden></p>
+
+        <button type="submit" class="btn btn-primary btn-block" id="pdf-btn">
+          Generar y descargar PDF
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Estimación según Lee et al. · Solo fines educativos · No es consejo médico</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
