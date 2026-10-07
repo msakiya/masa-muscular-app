@@ -1,15 +1,8 @@
 /**
- * Configuración de la app Masa Muscular.
- * Completa los valores de EmailJS para envío automático de correo.
- * Obtén tus claves en https://www.emailjs.com/
- *
- * Plantilla sugerida (variables):
- *   {{to_name}} {{to_email}} {{summary}} {{smm}} {{muscle_pct}} {{imc}} {{categoria}}
+ * Config client-side (sin secretos).
+ * Correos + Mautic se manejan en /api/submit con variables de entorno de Vercel.
+ * Ver README.md → sección "Variables de entorno".
  */
 window.APP_CONFIG = {
-  emailjs: {
-    publicKey: '',
-    serviceId: '',
-    templateId: ''
-  }
+  apiSubmitPath: '/api/submit'
 };

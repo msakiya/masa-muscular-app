@@ -1,0 +1,9 @@
+{
+  "name": "masa-muscular-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Calculadora estática de masa muscular + API Resend/Mautic",
+  "engines": {
+    "node": ">=18"
+  }
+}

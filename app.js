@@ -1,6 +1,6 @@
 /**
  * Calculadora de masa muscular esquelética (Lee et al.)
- * Pure static — no frameworks.
+ * UI: HTML/CSS/JS. Envío de correos + Mautic vía POST /api/submit (Resend).
  */
 
 (function () {
@@ -21,7 +21,6 @@
    * }} */
   let lastResult = null;
 
-  // --- Cálculo Lee et al. ---
   function calcSMM(sexo, peso, altura_m, edad) {
     const base = 0.244 * peso + 7.8 * altura_m - 0.098 * edad;
     return sexo === 'hombre' ? base + 6.6 : base - 4.5;
@@ -41,13 +40,7 @@
   }
 
   function categoryLabel(cat) {
-    const map = {
-      bajo: 'Bajo',
-      promedio: 'Promedio',
-      bueno: 'Bueno',
-      alto: 'Alto'
-    };
-    return map[cat] || cat;
+    return ({ bajo: 'Bajo', promedio: 'Promedio', bueno: 'Bueno', alto: 'Alto' })[cat] || cat;
   }
 
   function showError(el, msg) {
@@ -64,15 +57,9 @@
     if (!data.sexo || (data.sexo !== 'hombre' && data.sexo !== 'mujer')) {
       return 'Selecciona tu sexo.';
     }
-    if (!(data.edad >= 15 && data.edad <= 100)) {
-      return 'Ingresa una edad válida (15–100 años).';
-    }
-    if (!(data.altura >= 120 && data.altura <= 230)) {
-      return 'Ingresa una altura válida (120–230 cm).';
-    }
-    if (!(data.peso >= 30 && data.peso <= 250)) {
-      return 'Ingresa un peso válido (30–250 kg).';
-    }
+    if (!(data.edad >= 15 && data.edad <= 100)) return 'Ingresa una edad válida (15–100 años).';
+    if (!(data.altura >= 120 && data.altura <= 230)) return 'Ingresa una altura válida (120–230 cm).';
+    if (!(data.peso >= 30 && data.peso <= 250)) return 'Ingresa un peso válido (30–250 kg).';
     if (data.cintura != null && !(data.cintura >= 40 && data.cintura <= 200)) {
       return 'La cintura debe estar entre 40 y 200 cm, o déjala vacía.';
     }
@@ -128,11 +115,9 @@
     LEAD.hidden = false;
     hideError(LEAD_ERROR);
     LEAD_SUCCESS.hidden = true;
-
     RESULTS.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // --- Recomendaciones personalizadas ---
   function buildRecommendations(r) {
     const proteinLow = (r.peso * 1.6).toFixed(0);
     const proteinHigh = (r.peso * 2.2).toFixed(0);
@@ -173,6 +158,7 @@
     }
   }
 
+  /** @returns {{ filename: string, base64: string }} */
   function generatePDF(nombre, email, r) {
     if (!window.jspdf || !window.jspdf.jsPDF) {
       throw new Error('jsPDF no cargó. Revisa tu conexión.');
@@ -201,7 +187,6 @@
       }
     };
 
-    // Header band
     doc.setFillColor(15, 23, 42);
     doc.rect(0, 0, pageW, 36, 'F');
     doc.setTextColor(62, 224, 162);
@@ -235,8 +220,7 @@
     line('Categoría: ' + categoryLabel(r.categoria), { style: 'bold', size: 12, gap: 8 });
 
     line('Recomendaciones personalizadas', { style: 'bold', size: 13, color: [15, 23, 42], gap: 4 });
-    const recs = buildRecommendations(r);
-    recs.forEach(function (rec, i) {
+    buildRecommendations(r).forEach(function (rec, i) {
       line((i + 1) + '. ' + rec, { size: 10, gap: 5 });
     });
 
@@ -250,68 +234,43 @@
     );
 
     const filename = 'masa-muscular-' + slugifyName(nombre) + '.pdf';
+    const dataUri = doc.output('datauristring');
+    const base64 = dataUri.split(',')[1] || '';
     doc.save(filename);
-    return filename;
-  }
-
-  function emailjsConfigured() {
-    const cfg = (window.APP_CONFIG && window.APP_CONFIG.emailjs) || {};
-    const key = cfg.publicKey || window.EMAILJS_PUBLIC_KEY || '';
-    const service = cfg.serviceId || window.EMAILJS_SERVICE_ID || '';
-    const template = cfg.templateId || window.EMAILJS_TEMPLATE_ID || '';
-    return key && service && template ? { publicKey: key, serviceId: service, templateId: template } : null;
-  }
-
-  function summaryText(nombre, r) {
-    return (
-      'Hola ' + nombre + ', tu masa muscular estimada es ' +
-      r.smm.toFixed(1) + ' kg (' + r.pct.toFixed(1) + '% del peso), IMC ' +
-      r.imc.toFixed(1) + ', categoría ' + categoryLabel(r.categoria) +
-      '. El PDF se descargó automáticamente en tu dispositivo.'
-    );
+    return { filename: filename, base64: base64 };
   }
 
   function saveLead(nombre, email, r) {
     try {
-      const lead = {
-        nombre: nombre,
-        email: email,
-        fecha: new Date().toISOString(),
-        smm: Number(r.smm.toFixed(2)),
-        pct: Number(r.pct.toFixed(2)),
-        imc: Number(r.imc.toFixed(2)),
-        categoria: r.categoria,
-        sexo: r.sexo
-      };
-      localStorage.setItem('masaMuscularLastLead', JSON.stringify(lead));
-    } catch (_) { /* ignore quota */ }
+      localStorage.setItem(
+        'masaMuscularLastLead',
+        JSON.stringify({
+          nombre: nombre,
+          email: email,
+          fecha: new Date().toISOString(),
+          smm: Number(r.smm.toFixed(2)),
+          pct: Number(r.pct.toFixed(2)),
+          imc: Number(r.imc.toFixed(2)),
+          categoria: r.categoria,
+          sexo: r.sexo
+        })
+      );
+    } catch (_) { /* ignore */ }
   }
 
-  async function trySendEmail(cfg, nombre, email, r) {
-    if (!window.emailjs) return { ok: false, reason: 'sdk' };
-    try {
-      emailjs.init({ publicKey: cfg.publicKey });
-      await emailjs.send(cfg.serviceId, cfg.templateId, {
-        to_name: nombre,
-        to_email: email,
-        user_name: nombre,
-        user_email: email,
-        summary: summaryText(nombre, r),
-        smm: r.smm.toFixed(1) + ' kg',
-        muscle_pct: r.pct.toFixed(1) + ' %',
-        imc: r.imc.toFixed(1),
-        categoria: categoryLabel(r.categoria),
-        sexo: r.sexo === 'hombre' ? 'Hombre' : 'Mujer',
-        edad: String(r.edad),
-        altura: r.altura + ' cm',
-        peso: r.peso + ' kg',
-        message: summaryText(nombre, r)
-      });
-      return { ok: true };
-    } catch (err) {
-      console.warn('EmailJS error', err);
-      return { ok: false, reason: 'send' };
+  async function submitLead(payload) {
+    const resp = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json().catch(function () {
+      return { ok: false };
+    });
+    if (!resp.ok) {
+      throw new Error((data && data.error) || 'Error al enviar');
     }
+    return data;
   }
 
   LEAD_FORM.addEventListener('submit', async function (e) {
@@ -339,9 +298,9 @@
     PDF_BTN.disabled = true;
     PDF_BTN.textContent = 'Generando PDF…';
 
-    let filename = '';
+    let pdf;
     try {
-      filename = generatePDF(nombre, email, lastResult);
+      pdf = generatePDF(nombre, email, lastResult);
     } catch (err) {
       showError(LEAD_ERROR, err.message || 'No se pudo generar el PDF.');
       PDF_BTN.disabled = false;
@@ -351,26 +310,50 @@
 
     saveLead(nombre, email, lastResult);
 
-    const cfg = emailjsConfigured();
-    let emailNote = '';
+    PDF_BTN.textContent = 'Enviando…';
+    let serverNote = '';
+    try {
+      const data = await submitLead({
+        nombre: nombre,
+        email: email,
+        smm: lastResult.smm.toFixed(1),
+        pct: lastResult.pct.toFixed(1),
+        imc: lastResult.imc.toFixed(1),
+        categoria: categoryLabel(lastResult.categoria),
+        sexo: lastResult.sexo,
+        edad: lastResult.edad,
+        altura: lastResult.altura,
+        peso: lastResult.peso,
+        cintura: lastResult.cintura,
+        pdfBase64: pdf.base64,
+        pdfFilename: pdf.filename
+      });
 
-    if (cfg) {
-      PDF_BTN.textContent = 'Enviando correo…';
-      const sent = await trySendEmail(cfg, nombre, email, lastResult);
-      if (sent.ok) {
-        emailNote = ' También enviamos un resumen a ' + email + '.';
-      } else {
-        emailNote = ' No pudimos enviar el correo automáticamente; el PDF ya se descargó.';
+      const r = (data && data.results) || {};
+      const parts = [];
+      if (r.leadEmail && r.leadEmail.ok) parts.push('enviamos el PDF a ' + email);
+      else if (r.leadEmail && r.leadEmail.skipped) {
+        parts.push('correo al lead pendiente (configura RESEND_API_KEY y RESEND_FROM en Vercel)');
+      } else if (r.leadEmail && !r.leadEmail.ok) {
+        parts.push('no se pudo enviar el PDF por correo (revisa Resend)');
       }
-    } else {
-      emailNote =
-        ' Para enviarlo por correo automáticamente, configura EmailJS en config.js.';
+      if (r.alertEmail && r.alertEmail.ok) parts.push('aviso enviado a Moisés');
+      if (r.mautic && r.mautic.ok) parts.push('lead agregado a la campaña Mautic');
+      else if (r.mautic && r.mautic.skipped) {
+        parts.push('Mautic pendiente (credenciales / campaign id)');
+      }
+
+      serverNote = parts.length ? ' También: ' + parts.join('; ') + '.' : '';
+    } catch (err) {
+      serverNote =
+        ' El PDF se descargó. No pudimos contactar el servidor de envío (' +
+        (err.message || 'error') +
+        ').';
     }
 
     LEAD_SUCCESS.hidden = false;
     LEAD_SUCCESS.textContent =
-      '¡Listo! Se descargó «' + filename + '».' + emailNote +
-      (cfg ? '' : ' Guardamos tu correo (' + email + ') localmente por si Moisés te contacta.');
+      '¡Listo! Se descargó «' + pdf.filename + '».' + serverNote;
 
     PDF_BTN.disabled = false;
     PDF_BTN.textContent = 'Generar y descargar PDF';
