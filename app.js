@@ -237,10 +237,10 @@
     line('¿Quieres ganar más masa muscular?', { style: 'bold', size: 12, color: [15, 23, 42], gap: 3 });
     line(
       'Si te interesa profundizar con una guía práctica, te recomendamos ' +
-        '«Aumento de Masa Muscular - Guía Completa 2023» (ebook, Max Fitness).',
+        '«Calistenia – Guía Definitiva Personalizada» (ebook para ganar fuerza y músculo).',
       { size: 10, gap: 3 }
     );
-    const affiliateUrl = 'https://go.hotmart.com/P107922015D';
+    const affiliateUrl = 'https://go.hotmart.com/E107922068E';
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(30, 41, 59);
